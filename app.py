@@ -7,8 +7,8 @@ from tf_explain.core.grad_cam import GradCAM
 import matplotlib.pyplot as plt
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.applications.resnet50 import preprocess_input
-
-
+from keras_explication import keras_explication
+from explication_modèle import explication_modèle
 def home_page():
     st.title("Le but de cette appli :")
     st.write("Développer une application qui permet de détecter automatiquement des images d'animaux Chiens et Chats.")
@@ -95,7 +95,14 @@ def cnn_page():
 
     st.header("Qu'est-ce qu'un CNN ?")
     st.write("Un réseau de neurones convolutifs (CNN) est un type de modèle d'apprentissage automatique, spécifiquement conçu pour traiter des données structurées en grille, comme des images. Il est largement utilisé pour des tâches telles que la classification d'images, la détection d'objets et la segmentation sémantique.")
-
+    
+    st.header("Quelques mots de vocabulaire :")
+    st.write("-Un tenseur peut être considéré comme une matrice n-dimensionnelle. Dans le CNN ci-dessus, les tenseurs seront tridimensionnels à l'exception de la couche de sortie.")
+    st.write("Un neurone peut être considéré comme une fonction qui prend plusieurs entrées et produit une seule sortie. Les sorties des neurones sont représentées ci-dessus sous la forme de cartes d'activation de couleur rouge → bleu.")
+    st.write("Une couche est simplement une collection de neurones effectuant la même opération, avec les mêmes hyperparamètres.")
+    st.write("Les poids et les biais du noyau, bien qu'ils soient propres à chaque neurone, sont ajustés pendant la phase d'apprentissage et permettent au classifieur de s'adapter au problème et à l'ensemble de données fournis. Ils sont représentés dans la visualisation avec une échelle de couleurs divergente jaune → verte. Les valeurs spécifiques peuvent être consultées dans la vue de formule interactive en cliquant sur un neurone ou en survolant le noyau/le biais dans la vue d'explication élastique de convolution.")
+    st.write("Un CNN fournit une fonction de score différentiable, représentée sous forme de scores de classe dans la visualisation de la couche de sortie.")
+    
     st.header("Comment fonctionne un CNN ?")
     st.write("Voici une explication simplifiée du fonctionnement d'un CNN :")
     st.write("1. Couches convolutives : Les couches convolutives sont responsables de l'extraction des caractéristiques visuelles de l'image. Elles utilisent des filtres (kernels) pour détecter des motifs locaux, tels que des bords, des textures ou des formes.")
@@ -153,7 +160,7 @@ def predict_image_transfer(image_path):
     model = tf.keras.models.load_model('modele_transfer_learning.h5')
     
     # Charger l'image à analyser
-    img = image.load_img(image_path, target_size=(224, 224))
+    img = image.load_img(image_path, target_size=(64, 64))
 
     # Convertir l'image en un tableau numpy
     x = image.img_to_array(img)
@@ -171,9 +178,30 @@ def predict_image_transfer(image_path):
     st.write("Prédictions : ", predictions)
     st.write("Prédictions : ", predicted_class)
     if predicted_class == 0:
-        st.title("C'est un Chat")
+        st.write("C'est un chat")
     elif predicted_class == 1:
-        st.title("C'est un Chien") 
+        st.write("(C'est peut-être un caméléon)")
+    elif predicted_class == 2 :
+        st.write("(C'est peut-être un crocodile/alligator)")
+    elif predicted_class == 3:
+        st.write("(C'est peut-être un chien)")
+    elif predicted_class == 4 :
+        st.write("(C'est peut-être un grenouille)")
+    elif predicted_class == 5 :
+        st.write("(C'est peut-être un gecko)")
+    elif predicted_class == 6 :
+        st.write("(C'est peut-être un iguane)")
+    elif predicted_class == 7 :
+        st.write("(C'est peut-être un lézard)")
+    elif predicted_class == 8 :
+        st.write("(C'est peut-être un salamandre)")
+    elif predicted_class == 9 :
+        st.write("(C'est peut-être un serpent)")
+    elif predicted_class == 10 :
+        st.write("(C'est peut-être un crapaud)")
+    elif predicted_class == 11 :
+        st.write("(C'est peut-être un tortue)")
+
 
 def transfer_mode():
     st.title('Classification d\'images')
@@ -185,7 +213,7 @@ def transfer_mode():
     uploaded_file = st.file_uploader("Choisissez une image...", type=["jpg", "jpeg", "png"])
 
     if uploaded_file is not None:
-        # Enregistrer l'image localement
+    # Enregistrer l'image localement
         with open("temp.jpg", "wb") as f:
             f.write(uploaded_file.getbuffer())
 
@@ -200,14 +228,7 @@ def transfer_mode():
         with col2:
             prediction = predict_image_transfer("temp.jpg")
             predicted_class = np.argmax(prediction)
-            if prediction == 0:
-                st.write("C'est un chat")
-            elif prediction == 1:
-                st.write("C'est un chien")
-            else:
-                st.write("C'est un reptile")
-        st.write("Prédictions : ", prediction)
-        st.write("Prédictions : ", predicted_class)
+            
 
 def predict_image2(image_path):
     # Charger votre modèle entraîné
@@ -274,28 +295,6 @@ def comprehension_page():
         
         
 
-def Explication_GradCam():
-    st.title("Explication de Grad-CAM")
-
-    st.header("À quoi ça sert ?")
-    st.write("Grad-CAM (Gradient-weighted Class Activation Mapping) est une technique d'interprétabilité pour les modèles de deep learning, spécifiquement pour les réseaux de neurones convolutionnels (CNN). Elle permet de comprendre quelles parties de l'image ont contribué le plus à la prédiction d'une classe spécifique par le modèle.")
-
-    st.header("Comment ça fonctionne ?")
-    st.write("Voici les étapes de fonctionnement de Grad-CAM :")
-    st.write("1. Charger une image et un modèle pré-entraîné.")
-    st.write("2. Sélectionner la dernière couche convolutive avant la couche de classification comme couche cible.")
-    st.write("3. Faire passer l'image à travers le modèle et enregistrer les gradients de la couche cible par rapport à la sortie.")
-    st.write("4. Calculer les poids de gradient en moyennant les gradients spatiaux sur chaque canal.")
-    st.write("5. Ponder les activations de la couche cible par les poids de gradient pour obtenir une carte d'activation.")
-    st.write("6. Normaliser la carte d'activation et la superposer sur l'image originale pour visualiser les régions d'intérêt.")
-    code_gradcam = "/home/matthieu/Images/Captures d’écran/Capture d’écran du 2023-05-22 10-05-49.png"
-    st.image(code_gradcam, caption='GradCam', use_column_width=True)
-    
-    st.header("Limites de Grad-CAM")
-    st.write("Bien que Grad-CAM soit un outil utile pour l'interprétabilité des CNN, il présente certaines limites :")
-    st.write("- Grad-CAM ne tient pas compte des interactions entre les différentes parties de l'image.")
-    st.write("- Il peut être sensible aux variations de l'échelle et de la rotation de l'image.")
-    st.write("- Grad-CAM ne fournit pas d'explication causale, il montre seulement les régions d'intérêt.")
 
 
 # Création de l'application Streamlit
@@ -304,12 +303,14 @@ def main():
     
     # Ajout d'une barre latérale pour la navigation entre les onglets
     st.sidebar.title('Navigation')
-    pages = ['Accueil', 'Classification d\'images', 'Réseaux de neurones CNN','Explication Transfer Learning','Modèle de Tranfer learning',"Explication GradCam", "Comprèhension du modèle"]
+    pages = ['Accueil','Explication Keras', 'Classification d\'images', 'Réseaux de neurones CNN','Explication Transfer Learning','Modèle de Tranfer learning',"Comprèhension du modèle", "GradCam"]
     page = st.sidebar.radio('Choisissez une page', pages)
     
     # Affichage de la page sélectionnée
     if page == 'Accueil':
         home_page()
+    elif page == 'Explication Keras':
+        keras_explication()
     elif page == 'Classification d\'images':
         prediction_page()
     elif page == 'Réseaux de neurones CNN':
@@ -318,9 +319,9 @@ def main():
         explication_tf()
     elif page == 'Modèle de Tranfer learning':
         transfer_mode()
-    elif page == 'Explication GradCam':
-        Explication_GradCam()
     elif page == 'Comprèhension du modèle':
+        explication_modèle()
+    elif page == 'GradCam':
         comprehension_page()
     
 if __name__ == '__main__':
